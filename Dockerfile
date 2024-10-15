@@ -5,7 +5,8 @@ FROM ubuntu:20.04
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Actualizar el sistema e instalar las dependencias necesarias
-RUN apt-get update && apt-get upgrade -y && \
+RUN apt-get update && \
+    apt-get upgrade -y && \
     apt-get install -y \
     wget \
     curl \
@@ -15,10 +16,10 @@ RUN apt-get update && apt-get upgrade -y && \
     xfce4-terminal \
     dbus-x11 \
     x11-xserver-utils \
-    task-xfce-desktop \
     gnome-terminal \
-    keyboard-configuration \
-    && apt-get clean
+    --no-install-recommends && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 # Establecer zona horaria a UTC para evitar prompts
 RUN ln -fs /usr/share/zoneinfo/Etc/UTC /etc/localtime && \
