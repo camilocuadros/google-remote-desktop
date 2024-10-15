@@ -1,38 +1,55 @@
-# Usar una imagen base de Ubuntu
+# Utilizar la imagen base de Ubuntu
 FROM ubuntu:20.04
 
-# Desactivar la interacción para evitar prompts
+# Desactivar la interacción para evitar prompts durante la instalación
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Instalar dependencias
-RUN apt-get update && apt-get install -y \
+# Actualizar el sistema e instalar las dependencias necesarias
+RUN apt-get update && apt-get upgrade -y && \
+    apt-get install -y \
     wget \
-    unzip \
     curl \
-    gdebi-core \
-    software-properties-common \
-    libgbm1 \
-    libxshmfence1 \
+    tzdata \
+    sudo \
+    xfce4 \
+    xfce4-terminal \
+    dbus-x11 \
+    x11-xserver-utils \
+    task-xfce-desktop \
+    gnome-terminal \
+    keyboard-configuration \
     && apt-get clean
 
-# Descargar el paquete de Chrome Remote Desktop
-RUN wget https://dl.google.com/linux/direct/chrome-remote-desktop_current_amd64.deb
+# Establecer zona horaria a UTC para evitar prompts
+RUN ln -fs /usr/share/zoneinfo/Etc/UTC /etc/localtime && \
+    dpkg-reconfigure --frontend noninteractive tzdata
 
-# Instalar el paquete .deb con gdebi para resolver dependencias
-RUN gdebi -n chrome-remote-desktop_current_amd64.deb
+# Crear un usuario llamado 'chrome-remote-user' con acceso sudo
+RUN useradd -m chrome-remote-user && \
+    adduser chrome-remote-user sudo && \
+    echo 'chrome-remote-user:password' | chpasswd && \
+    usermod -aG sudo chrome-remote-user
 
-# Instalar XFCE
-RUN apt-get install -y xfce4 xfce4-goodies
+# Instalar Google Chrome Remote Desktop
+RUN wget https://dl.google.com/linux/direct/chrome-remote-desktop_current_amd64.deb && \
+    dpkg --install chrome-remote-desktop_current_amd64.deb || apt-get -f install -y
 
-# Configurar Google Remote Desktop
-RUN useradd -m chrome-remote-user \
-    && usermod -aG sudo chrome-remote-user \
-    && echo 'chrome-remote-user ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers \
-    && mkdir /home/chrome-remote-user/.config \
-    && echo 'exec /usr/sbin/lightdm-session "xfce4-session"' > /home/chrome-remote-user/.xsession
+# Configurar Google Chrome Remote Desktop para el usuario
+RUN usermod -aG chrome-remote-desktop chrome-remote-user
 
-# Exponer los puertos necesarios
-EXPOSE 8080 5900
+# Establecer el entorno de escritorio XFCE para Google Remote Desktop
+RUN bash -c 'echo "exec /usr/bin/xfce4-session" > /home/chrome-remote-user/.xsession'
 
-# Comando para iniciar Google Remote Desktop
-CMD ["/opt/google/chrome-remote-desktop/start"]
+# Configurar permisos para el acceso
+RUN chown -R chrome-remote-user:chrome-remote-user /home/chrome-remote-user
+
+# Cambiar al usuario creado para Google Remote Desktop
+USER chrome-remote-user
+
+# Comando para configurar automáticamente Google Remote Desktop con un PIN
+CMD /opt/google/chrome-remote-desktop/start --code="4/0AVG7fiRM_t1EAjU71n322wOzqMov9kAwnvAN5W_Wf2KnH3WRNgFfHvEp6Ia5PLPP_swE5w" --redirect-url="https://remotedesktop.google.com/" --name=$(hostname) && \
+    /opt/google/chrome-remote-desktop/chrome-remote-desktop --pin=123456
+
+# Exponer el puerto para que Google Remote Desktop pueda conectarse
+EXPOSE 443
+EXPOSE 80
