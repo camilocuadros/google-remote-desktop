@@ -35,7 +35,10 @@ RUN useradd -m chrome-remote-user && \
 RUN wget https://dl.google.com/linux/direct/chrome-remote-desktop_current_amd64.deb && \
     dpkg --install chrome-remote-desktop_current_amd64.deb || apt-get -f install -y
 
-# Configurar Google Chrome Remote Desktop para el usuario
+# Crear el grupo 'chrome-remote-desktop' si no existe
+RUN groupadd chrome-remote-desktop || true
+
+# Añadir el usuario al grupo 'chrome-remote-desktop'
 RUN usermod -aG chrome-remote-desktop chrome-remote-user
 
 # Establecer el entorno de escritorio XFCE para Google Remote Desktop
