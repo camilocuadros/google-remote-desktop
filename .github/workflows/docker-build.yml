@@ -1,27 +1,25 @@
-name: Build and Push Docker Image
+name: CI
 
 on:
   push:
     branches:
-      - main
+      - main  # Cambia esto por la rama que estás usando
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
-      # Comprobar el código
       - name: Checkout code
         uses: actions/checkout@v2
 
-      # Autenticarse en Docker Hub
       - name: Log in to Docker Hub
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
-      # Construir la imagen con el nombre correcto (Reemplaza "miusuario" por tu nombre real de Docker Hub)
       - name: Build Docker image
-        run: docker build -t ${{ secrets.DOCKER_USERNAME }}/google-remote-desktop:latest .
+        run: docker build -t camilocuadros2/google-remote-desktop .
 
-      # Push de la imagen a Docker Hub (Asegúrate de que el nombre coincide con el de la construcción)
       - name: Push Docker image
-        run: docker push ${{ secrets.DOCKER_USERNAME }}/google-remote-desktop:latest
+        run: docker push camilocuadros2/google-remote-desktop
